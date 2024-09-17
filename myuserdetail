@@ -1,0 +1,232 @@
+package com.empower.demo.service;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+@Service
+public class MyUserDetailsService implements UserDetailsService {
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Dummy data for demonstration. You should replace this with fetching from DB.
+        if (username.equals("admin")) {
+            return new User("admin", 
+                            "$2a$12$IR4WDJdWzWtX1TwIaKa70O.r09T7nFfLWed.v.wI6gLKW9Ly7tPou", 
+                            getAuthorities("ADMIN"));
+        } else if (username.equals("host")) {
+            return new User("host", 
+                            "$2a$12$IR4WDJdWzWtX1TwIaKa70O.r09T7nFfLWed.v.wI6gLKW9Ly7tPou", 
+                            getAuthorities("HOST"));
+        } else if (username.equals("user")) {
+            return new User("user", 
+                            "$2a$12$IR4WDJdWzWtX1TwIaKa70O.r09T7nFfLWed.v.wI6gLKW9Ly7tPou", 
+                            getAuthorities("USER"));
+        } else {
+            throw new UsernameNotFoundException("User not found with username: " + username);
+        }
+    }
+
+    private Collection<? extends GrantedAuthority> getAuthorities(String role) {
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+        return authorities;
+    }
+}
+#############################################################################################
+Key Changes:
+Dynamic Role Assignment:
+
+I've created a method getAuthorities(String role) that takes the user's role as an argument and returns a collection of granted authorities (ROLE_ADMIN, ROLE_USER, ROLE_HOST).
+The roles are assigned dynamically based on the username.
+Dummy Data:
+
+The users admin, host, and user are hardcoded for demonstration. Replace this with actual logic to fetch users from a database (e.g., using JPA).
+Password Encryption:
+
+The password is stored as a hashed value (with BCrypt), as in your previous setup. You would use the same BCrypt encoder for creating new user passwords.
+Integration with Database (Optional):
+To integrate this with a database where users and their roles are stored, you'd need to use Spring Data JPA or another method to fetch users and their roles from the database.
+
+Let me know if you'd like to integrate database functionality or if you'd like further modifications!
+##############################################################################################
+the below code to integrate db functionality
+
+
+User Entity:
+
+
+package com.empower.demo.entity;
+
+import javax.persistence.*;
+import java.util.Set;
+
+@Entity
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String username;
+    private String password;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles", 
+        joinColumns = @JoinColumn(name = "user_id"), 
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles;
+
+    // Getters and Setters
+}
+
+
+
+To integrate the MyUserDetailsService with a database for fetching users and their roles dynamically, you can use Spring Data JPA. I'll guide you through the steps to implement this using the User and Role entities and the JPA Repositories.
+
+1. Entities:
+User Entity:
+This entity will store user information, including username, password, and roles.
+
+java
+Copy code
+package com.empower.demo.entity;
+
+import javax.persistence.*;
+import java.util.Set;
+
+@Entity
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String username;
+    private String password;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles", 
+        joinColumns = @JoinColumn(name = "user_id"), 
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles;
+
+    // Getters and Setters
+}
+##
+Role Entity:
+This entity will store the roles of the users (e.g., ADMIN, USER, HOST).
+
+package com.empower.demo.entity;
+
+import javax.persistence.*;
+
+@Entity
+public class Role {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    // Getters and Setters
+}
+  
+
+
+ JPA Repositories:
+UserRepository:
+This repository will be used to fetch users from the database.
+
+
+
+
+package com.empower.demo.repository;
+
+import com.empower.demo.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByUsername(String username);
+}
+
+
+ MyUserDetailsService:
+
+package com.empower.demo.service;
+
+import com.empower.demo.entity.Role;
+import com.empower.demo.entity.User;
+import com.empower.demo.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+@Service
+public class MyUserDetailsService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Fetch the user from the database
+        User user = userRepository.findByUsername(username);
+
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with username: " + username);
+        }
+
+        // Convert user roles into granted authorities
+        Collection<GrantedAuthority> authorities = new ArrayList<>();
+        for (Role role : user.getRoles()) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+        }
+
+        // Return a Spring Security User object
+        return new org.springframework.security.core.userdetails.User(
+                user.getUsername(), 
+                user.getPassword(), 
+                authorities);
+    }
+}
+  
+#########################################################################################
+EXPLANATION FOR THE COMPLETE OR PROGRAM
+
+Explanation:
+Fetching the User:
+
+The loadUserByUsername() method uses the UserRepository to fetch the user from the database based on the username.
+Assigning Roles:
+
+It loops through the userâ€™s roles and converts them into GrantedAuthority objects (e.g., ROLE_ADMIN, ROLE_USER, ROLE_HOST).
+Returning UserDetails:
+
+The UserDetails object is constructed from the userâ€™s data, which includes the username, password, and roles.
+4. Database Configuration (if not done already):
+In your application.properties or application.yml file, ensure the Oracle database connection is configured properly:
+
+
+
+

@@ -1,0 +1,35 @@
+your-project-folder/
+│
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── empower/
+│   │   │           └── demo/
+│   │   │               ├── config/
+│   │   │               │   └── MySecurityConfiguration.java
+│   │   │               ├── controller/
+│   │   │               │   └── MyController.java
+│   │   │               ├── entity/
+│   │   │               │   ├── User.java
+│   │   │               │   └── Role.java
+│   │   │               ├── repository/
+│   │   │               │   └── UserRepository.java
+│   │   │               ├── service/
+│   │   │               │   └── MyUserDetailsService.java
+│   │   ├── resources/
+│   │   │   ├── application.properties
+│   │   │   └── static/     # Static resources like HTML, CSS, JS
+│   │   │   └── templates/  # Thymeleaf templates (optional)
+│   │   └── webapp/         # Optional for JSP (if used)
+│   └── test/
+│       └── java/
+│           └── com/
+│               └── empower/
+│                   └── demo/
+│                       └── MyControllerTest.java (Unit Tests)
+│
+├── pom.xml
+├── mvnw
+├── mvnw.cmd
+└── .gitignore

@@ -1,0 +1,40 @@
+package com.empower.demo.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class MyController {
+
+    @GetMapping("/home")
+    public String home() {
+        return "Welcome all of you";
+    }
+
+    @GetMapping("/admin/home")
+    public String adminHome() {
+        return "Welcome admin";
+    }
+
+    @GetMapping("/user/home")
+    public String userHome() {
+        return "Welcome user";
+    }
+    
+    @GetMapping("/host/home")
+    public String hostHome() {
+        return "Welcome host";
+    }
+}
+#############################################################################################
+explanation
+
+Added @GetMapping("/host/home"):
+This maps requests to /host/home, which is only accessible by users with the HOST role as defined in your MySecurityConfiguration file.
+The method returns a simple welcome message for hosts: "Welcome host."
+Now, your MyController class handles requests for all three roles: admin, user, and host, along with a general welcome page for everyone. Let me know if you need further customization!
+
+
+
+
+
